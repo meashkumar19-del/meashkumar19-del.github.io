@@ -1,0 +1,595 @@
+<!DOCTYPE html><html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Independent Companion — Working Demo (LocalStorage)</title>
+  <meta name="description" content="Profiles, bookings, reviews — single-file working demo. All data stays in your browser (LocalStorage)."/>
+  <style>
+    :root{
+      --bg:#0f1724; --panel:#0b1224; --muted:#94a3b8; --text:#e6eef6;
+      --accent:#22c55e; --accent2:#06b6d4; --glass:rgba(255,255,255,0.03);
+      --radius:12px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, Roboto, Arial; background:linear-gradient(180deg,#071022 0%,#0b1224 100%); color:var(--text); -webkit-font-smoothing:antialiased}
+    a{color:inherit}
+    h1,h2,h3,h4{margin:0}
+    .wrap{max-width:1100px;margin:18px auto;padding:18px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:54px;height:54px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:800;color:#041018}
+    .muted{color:var(--muted);font-size:.95rem}
+    nav{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{background:var(--glass);border:1px solid rgba(255,255,255,0.05);padding:8px 12px;border-radius:10px;color:var(--text);cursor:pointer}
+    .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#051016;border:none}
+    .layout{display:grid;grid-template-columns:1fr;gap:14px}
+    @media(min-width:880px){ .layout{grid-template-columns:320px 1fr} }
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
+    .card{background:rgba(255,255,255,0.02);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);margin-bottom:12px}
+    label{display:block;font-size:.9rem;margin-bottom:6px;color:var(--muted)}
+    input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="date"], input[type="time"], select, textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--text)}
+    textarea{min-height:84px;resize:vertical}
+    .list{display:grid;gap:10px}
+    .profile-item{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));cursor:pointer;border:1px solid rgba(255,255,255,0.03)}
+    .profile-item:hover{transform:translateY(-3px);transition:transform .15s}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.06);font-size:.85rem}
+    .small{font-size:.9rem;color:var(--muted)}
+    .grid2{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:740px){ .grid2{grid-template-columns:1fr 1fr} }
+    .sep{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.05),transparent);margin:12px 0}
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:.9rem}
+    .booking-item{padding:8px;border-radius:8px;background:rgba(0,0,0,0.2);margin-bottom:8px}
+    .pill{display:inline-block;padding:2px 8px;border:1px solid rgba(255,255,255,0.08);border-radius:999px;background:rgba(255,255,255,0.03);font-size:.8rem}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">IC</div>
+        <div>
+          <h1>Independent Companion</h1>
+          <div class="muted">कानूनी, सहमति-आधारित (Demo) · 18+ · LocalStorage</div>
+        </div>
+      </div><nav id="topNav">
+    <button class="btn" onclick="showView('explore')">Explore</button>
+    <button class="btn" onclick="showView('myProfile')">My Profile</button>
+    <button class="btn" onclick="showView('reviews')">Reviews</button>
+    <button class="btn" onclick="showView('admin')">Admin</button>
+    <button id="authBtn" class="btn btn-primary" onclick="openAuth()">Login / Signup</button>
+  </nav>
+</header>
+
+<main class="layout">
+  <!-- LEFT: filters -->
+  <aside class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div><strong>Search & Filter</strong><div class="small">शहर / सर्विस / प्रकार</div></div>
+      <div class="small">Users: <span id="userCount">0</span></div>
+    </div>
+
+    <div class="card">
+      <label>शहर</label>
+      <input type="text" id="filterCity" placeholder="उदा. Jaipur" oninput="renderList()" />
+      <label style="margin-top:8px">सर्विस</label>
+      <select id="filterService" onchange="renderList()">
+        <option value="">— All —</option>
+        <option>Escort</option>
+        <option>Dinner</option>
+        <option>Photoshoot</option>
+        <option>City Guide</option>
+        <option>Custom</option>
+      </select>
+      <label style="margin-top:8px">टाइप</label>
+      <select id="filterType" onchange="renderList()">
+        <option value="">— Any —</option>
+        <option>Callboy</option>
+        <option>Callgirl</option>
+      </select>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="clearFilters()">Clear</button>
+        <button class="btn" onclick="shuffleProfiles()">Shuffle</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>Quick Links</strong>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+        <button class="btn" onclick="showView('explore')">Browse Profiles</button>
+        <button class="btn" onclick="showView('myProfile')">My Bookings</button>
+        <button class="btn" onclick="showView('reviews')">Leave Review</button>
+        <button class="btn" onclick="openAuth()">Login / Signup</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>Safety</strong>
+      <div class="small" style="margin-top:6px">Demo site — data stored locally in your browser. Services are for lawful, non-sexual companionship only.</div>
+    </div>
+  </aside>
+
+  <!-- RIGHT: main views -->
+  <section id="main" class="panel">
+    <!-- Explore view -->
+    <div id="view-explore">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div><h2 style="margin:0">Available Companions</h2><div class="small">Tap a card for details & booking</div></div>
+        <div class="small" id="profileCount">0 profiles</div>
+      </div>
+      <div id="profilesList" class="list"></div>
+    </div>
+
+    <!-- Profile detail -->
+    <div id="view-detail" style="display:none">
+      <button class="btn" onclick="backToExplore()">← Back</button>
+      <div id="detailCard" class="card" style="margin-top:12px"></div>
+    </div>
+
+    <!-- My Profile / My bookings -->
+    <div id="view-myProfile" style="display:none">
+      <h2>My Profile</h2>
+      <div id="myProfileCard" class="card"></div>
+      <div class="sep"></div>
+      <h3>My Bookings</h3>
+      <div id="myBookings"></div>
+    </div>
+
+    <!-- Reviews -->
+    <div id="view-reviews" style="display:none">
+      <h2>Client Reviews</h2>
+      <div id="reviewsList" class="list" style="margin-bottom:12px"></div>
+      <div class="card">
+        <h3>Write a Review</h3>
+        <label>Rating</label>
+        <select id="reviewRating"><option value="">Select</option><option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option></select>
+        <label style="margin-top:8px">Your Review</label>
+        <textarea id="reviewText" placeholder="Your experience (keep it respectful)"></textarea>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="submitReview()">Submit</button>
+          <button class="btn" onclick="clearReviewForm()">Clear</button>
+        </div>
+        <div class="small" style="margin-top:8px">Login required to submit review.</div>
+      </div>
+    </div>
+
+    <!-- Admin (Local demo) -->
+    <div id="view-admin" style="display:none">
+      <h2>Admin Panel</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-primary" onclick="openAddProfileModal()">Add Profile</button>
+        <button class="btn" onclick="renderAdminReviews()">Manage Reviews</button>
+        <button class="btn" onclick="renderAdminBookings()">View Bookings</button>
+        <button class="btn" onclick="exportAll()">Export Data</button>
+        <button class="btn" onclick="importDemo()">Load Demo Data</button>
+        <button class="btn" onclick="clearAllData()">Clear All Data</button>
+      </div>
+      <div id="adminContent" class="card">Use Admin actions to manage demo data (no server).</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="small">© Independent Companion — Working Demo. LocalStorage only.</div>
+</footer>
+
+  </div>  <!-- Modal root -->  <div id="modalRoot" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:9999">
+    <div id="modalCard" style="width:92%;max-width:760px;background:linear-gradient(180deg,#071325,#071020);padding:16px;border-radius:10px;border:1px solid rgba(255,255,255,0.04)">
+      <div id="modalBody"></div>
+      <div style="text-align:right;margin-top:10px"><button class="btn" onclick="closeModal()">Close</button></div>
+    </div>
+  </div>  <script>
+    /***********************
+     * Utilities & Storage *
+     ***********************/
+    const LS_KEYS = { USERS:'ic_users', CURRENT:'ic_currentUser', PROFILES:'ic_profiles', BOOKINGS:'ic_bookings', REVIEWS:'ic_reviews' };
+
+    function getStore(k){ try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []} }
+    function setStore(k,v){ localStorage.setItem(k, JSON.stringify(v)) }
+    function getObj(k){ try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null} }
+    function setObj(k,o){ localStorage.setItem(k, JSON.stringify(o)) }
+    function uid(){ return 'id_'+Math.random().toString(36).slice(2,9) }
+    function toast(msg){ alert(msg) }
+
+    /***********************
+     * Demo Data Seeder    *
+     ***********************/
+    function ensureDemoData(){
+      if(!getObj(LS_KEYS.PROFILES) || getStore(LS_KEYS.PROFILES).length===0){
+        const demoProfiles = [
+          { id:uid(), name:'Kunal Sharma', type:'Callboy', age:25, city:'Jaipur', services:['Escort','Photoshoot'], rate:1500, photo:'https://via.placeholder.com/640x360?text=Kunal', bio:'Professional, polite and punctual. City guide + photoshoot collaboration possible.' },
+          { id:uid(), name:'Ravi Verma', type:'Callboy', age:27, city:'Jodhpur', services:['Dinner','City Guide'], rate:1200, photo:'https://via.placeholder.com/640x360?text=Ravi', bio:'Local expert for day-out itineraries and formal dinners.' },
+          { id:uid(), name:'Anita Rao', type:'Callgirl', age:23, city:'Udaipur', services:['Escort','Photoshoot'], rate:2000, photo:'https://via.placeholder.com/640x360?text=Anita', bio:'Elegant companion for events, portfolio-friendly photoshoots (non-explicit).'}
+        ];
+        setStore(LS_KEYS.PROFILES, demoProfiles);
+      }
+      if(!getObj(LS_KEYS.USERS) || getStore(LS_KEYS.USERS).length===0){
+        const demoUsers = [
+          { id:uid(), username:'client1', name:'Priya', email:'priya@example.com', password:'1234' },
+          { id:uid(), username:'client2', name:'Aman', email:'aman@example.com', password:'1234' },
+          { id:'admin', username:'admin', name:'Site Admin', email:'admin@example.com', password:'admin123', role:'admin' }
+        ];
+        setStore(LS_KEYS.USERS, demoUsers);
+      }
+      if(!getObj(LS_KEYS.BOOKINGS)) setStore(LS_KEYS.BOOKINGS, []);
+      if(!getObj(LS_KEYS.REVIEWS)) setStore(LS_KEYS.REVIEWS, []);
+    }
+
+    /***********************
+     * Auth (Signup/Login) *
+     ***********************/
+    function openAuth(){
+      const html = `
+        <h3>Login / Signup</h3>
+        <div class="grid2" style="gap:12px">
+          <div class="card">
+            <h4>Login</h4>
+            <label>Username or Email</label><input id="authLoginUser" type="text"/>
+            <label>Password</label><input id="authLoginPass" type="password"/>
+            <div style="margin-top:8px"><button class="btn btn-primary" onclick="doLogin()">Login</button></div>
+            <div class="small" style="margin-top:8px">Demo admin: <strong>admin/admin123</strong></div>
+          </div>
+          <div class="card">
+            <h4>Signup</h4>
+            <label>Full name</label><input id="authSignupName" type="text"/>
+            <label>Username</label><input id="authSignupUser" type="text"/>
+            <label>Email</label><input id="authSignupEmail" type="email"/>
+            <label>Password</label><input id="authSignupPass" type="password"/>
+            <div style="margin-top:8px"><button class="btn btn-primary" onclick="doSignup()">Create Account</button></div>
+          </div>
+        </div>`;
+      showModal(html);
+    }
+
+    function doSignup(){
+      const name = document.getElementById('authSignupName').value.trim();
+      const username = document.getElementById('authSignupUser').value.trim();
+      const email = document.getElementById('authSignupEmail').value.trim();
+      const pass = document.getElementById('authSignupPass').value.trim();
+      if(!name||!username||!email||!pass){ return toast('सभी फ़ील्ड भरें'); }
+      const users = getStore(LS_KEYS.USERS);
+      if(users.some(u=>u.username===username)){ return toast('Username already taken'); }
+      const newUser = { id:uid(), username, name, email, password:pass };
+      users.push(newUser); setStore(LS_KEYS.USERS, users);
+      setObj(LS_KEYS.CURRENT, { id:newUser.id, username:newUser.username, name:newUser.name, email:newUser.email });
+      closeModal(); refreshUI(); toast('Account created & logged in');
+    }
+
+    function doLogin(){
+      const user = document.getElementById('authLoginUser').value.trim();
+      const pass = document.getElementById('authLoginPass').value.trim();
+      const users = getStore(LS_KEYS.USERS);
+      const found = users.find(u=> (u.username===user || u.email===user) && u.password===pass );
+      if(!found){ return toast('Invalid credentials'); }
+      setObj(LS_KEYS.CURRENT, { id:found.id, username:found.username, name:found.name, email:found.email, role:found.role||'user' });
+      closeModal(); refreshUI(); toast('Logged in as '+found.username);
+    }
+
+    function logout(){ localStorage.removeItem(LS_KEYS.CURRENT); refreshUI(); toast('Logged out'); }
+    function currentUser(){ return getObj(LS_KEYS.CURRENT) }
+
+    /***********************
+     * Views & UI          *
+     ***********************/
+    function showView(name){
+      const ids=['explore','detail','myProfile','reviews','admin'];
+      ids.forEach(v=>{ const el=document.getElementById('view-'+v); if(el) el.style.display='none'; });
+      const target=document.getElementById('view-'+name); if(target) target.style.display='block';
+      if(name==='explore') renderList();
+      if(name==='myProfile') renderMyProfile();
+      if(name==='reviews') renderReviews();
+      if(name==='admin') renderAdminArea();
+    }
+
+    function refreshUI(){
+      const cur=currentUser();
+      const authBtn=document.getElementById('authBtn');
+      if(cur){ authBtn.textContent='Logout ('+cur.username+')'; authBtn.onclick=logout; }
+      else { authBtn.textContent='Login / Signup'; authBtn.onclick=openAuth; }
+      document.getElementById('userCount').textContent=getStore(LS_KEYS.USERS).length;
+      document.getElementById('profileCount').textContent=getStore(LS_KEYS.PROFILES).length+' profiles';
+      showView('explore');
+    }
+
+    /***********************
+     * Profiles (list/detail)
+     ***********************/
+    function renderList(){
+      const profiles=getStore(LS_KEYS.PROFILES);
+      const city=(document.getElementById('filterCity').value||'').toLowerCase().trim();
+      const service=document.getElementById('filterService').value;
+      const type=document.getElementById('filterType').value;
+      const list=document.getElementById('profilesList');
+      list.innerHTML='';
+      const filtered=profiles.filter(p=>{
+        if(city && !(p.city||'').toLowerCase().includes(city)) return false;
+        if(service && !(p.services||[]).includes(service)) return false;
+        if(type && p.type!==type) return false;
+        return true;
+      });
+      if(filtered.length===0){ list.innerHTML='<div class="small">No profiles found.</div>'; return; }
+      filtered.forEach(p=>{
+        const div=document.createElement('div');
+        div.className='profile-item';
+        div.innerHTML=`<div style="width:72px;height:72px;border-radius:8px;flex:0 0 72px;background-image:url('${p.photo}');background-size:cover;background-position:center"></div>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><strong>${escapeHtml(p.name)}</strong> <span class="badge">${p.type}</span></div>
+              <div class="small">₹${p.rate}/hr</div>
+            </div>
+            <div class="small">${escapeHtml(p.city)} • ${p.age} yrs</div>
+            <div style="margin-top:6px">${(p.services||[]).slice(0,3).map(s=>'<span class="badge">'+escapeHtml(s)+'</span>').join(' ')}</div>
+          </div>`;
+        div.onclick=()=>showProfile(p.id);
+        list.appendChild(div);
+      });
+    }
+
+    function showProfile(id){
+      const profiles=getStore(LS_KEYS.PROFILES);
+      const p=profiles.find(x=>x.id===id); if(!p) return;
+      const d=document.getElementById('detailCard');
+      d.innerHTML=`
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:240px"><img src="${p.photo}" style="width:100%;border-radius:10px" alt="${escapeHtml(p.name)}"></div>
+          <div style="flex:1.2">
+            <h2 style="margin-top:0">${escapeHtml(p.name)} <span class="small">(${p.type})</span></h2>
+            <div class="small">Age: ${p.age} • City: ${escapeHtml(p.city)}</div>
+            <div style="margin-top:8px"><strong>Services:</strong> ${(p.services||[]).map(escapeHtml).join(', ')}</div>
+            <div style="margin-top:8px"><strong>Rate:</strong> ₹${p.rate}/hour</div>
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="openBooking('${p.id}')">Book Now</button>
+              <button class="btn" onclick="scrollToReviews()">View Reviews</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px" class="small">${escapeHtml(p.bio||'')}</div>`;
+      showView('detail');
+    }
+
+    function backToExplore(){ showView('explore') }
+
+    /***********************
+     * Booking (modal)     *
+     ***********************/
+    function openBooking(profileId){
+      const cur=currentUser(); if(!cur){ toast('Please login to make booking'); openAuth(); return; }
+      const profile=(getStore(LS_KEYS.PROFILES).find(x=>x.id===profileId));
+      const html=`
+        <h3>Booking: ${escapeHtml(profile.name)}</h3>
+        <div class="grid2">
+          <div>
+            <label>Booking Date</label><input type="date" id="bookDate"/>
+            <label>Start Time</label><input type="time" id="bookTime"/>
+            <label>Duration (hours)</label><input type="number" id="bookDuration" value="2" min="1"/>
+          </div>
+          <div>
+            <label>Location (city/hotel)</label><input type="text" id="bookLocation" placeholder="City / Hotel"/>
+            <label>Notes</label><textarea id="bookNotes" placeholder="Any instructions (non-sexual)"></textarea></div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="confirmBooking('${profileId}')">Confirm Booking</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>`;
+  showModal(html);
+}
+
+function confirmBooking(profileId){
+  const cur=currentUser(); if(!cur) return toast('Login first');
+  const date=document.getElementById('bookDate').value;
+  const time=document.getElementById('bookTime').value;
+  const duration=+document.getElementById('bookDuration').value||1;
+  const location=(document.getElementById('bookLocation').value||'').trim();
+  const notes=(document.getElementById('bookNotes').value||'').trim();
+  if(!date||!time||!location) return toast('Please fill date, time and location');
+  const bookings=getStore(LS_KEYS.BOOKINGS);
+  bookings.push({ id:uid(), profileId, userId:cur.id, userName:cur.username, date, time, duration, location, notes, ts:new Date().toISOString() });
+  setStore(LS_KEYS.BOOKINGS, bookings);
+  closeModal(); toast('Booking created (local).'); renderMyBookings();
+}
+
+function renderMyProfile(){
+  const cur=currentUser(); if(!cur){ toast('Please login'); openAuth(); return; }
+  const card=document.getElementById('myProfileCard');
+  card.innerHTML=`
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="width:72px;height:72px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div>
+      <div>
+        <div style="font-weight:700">${escapeHtml(cur.name||cur.username)}</div>
+        <div class="small">${escapeHtml(cur.email||'')} • ${escapeHtml(cur.username)}</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="openEditProfile()">Edit Profile</button>
+    </div>`;
+  renderMyBookings();
+}
+
+function renderMyBookings(){
+  const cur=currentUser(); if(!cur) return; const el=document.getElementById('myBookings'); el.innerHTML='';
+  const all=getStore(LS_KEYS.BOOKINGS).filter(b=>b.userId===cur.id);
+  if(all.length===0){ el.innerHTML='<div class="small">No bookings yet.</div>'; return; }
+  const profiles=getStore(LS_KEYS.PROFILES);
+  all.slice().reverse().forEach(b=>{
+    const p=profiles.find(x=>x.id===b.profileId)||{}; const div=document.createElement('div'); div.className='booking-item';
+    div.innerHTML=`<strong>${escapeHtml(p.name||'Profile')}</strong> — ${b.date} ${b.time} • ${b.duration}h<br><div class="small">${escapeHtml(b.location)}</div>`;
+    el.appendChild(div);
+  });
+}
+
+function openEditProfile(){
+  const cur=currentUser(); const users=getStore(LS_KEYS.USERS); const me=users.find(u=>u.id===cur.id);
+  const html=`<h3>Edit Profile</h3>
+    <label>Full name</label><input id="epName" value="${escapeHtml(me.name||'')}"/>
+    <label>Email</label><input id="epEmail" value="${escapeHtml(me.email||'')}"/>
+    <label>Change Password (leave blank to keep)</label><input id="epPass" type="password"/>
+    <div style="margin-top:8px"><button class="btn btn-primary" onclick="saveProfileEditsUser()">Save</button></div>`;
+  showModal(html);
+}
+
+function saveProfileEditsUser(){
+  const cur=currentUser(); if(!cur) return; const users=getStore(LS_KEYS.USERS); const me=users.find(u=>u.id===cur.id);
+  me.name=document.getElementById('epName').value.trim();
+  me.email=document.getElementById('epEmail').value.trim();
+  const newPass=document.getElementById('epPass').value.trim(); if(newPass) me.password=newPass;
+  setStore(LS_KEYS.USERS, users); setObj(LS_KEYS.CURRENT, { id:me.id, username:me.username, name:me.name, email:me.email, role:me.role||'user' });
+  closeModal(); refreshUI(); toast('Profile updated');
+}
+
+/***********************
+ * Reviews              *
+ ***********************/
+function renderReviews(){
+  const reviews=getStore(LS_KEYS.REVIEWS); const el=document.getElementById('reviewsList'); el.innerHTML='';
+  if(reviews.length===0){ el.innerHTML='<div class="small">No reviews yet.</div>'; return; }
+  reviews.slice().reverse().forEach(r=>{
+    const div=document.createElement('div'); div.className='card';
+    div.innerHTML=`<div style="display:flex;justify-content:space-between"><strong>${escapeHtml(r.userName)}</strong><div class=small>${r.rating}★</div></div><div style="margin-top:6px">${escapeHtml(r.text)}</div><div class="small" style="margin-top:8px">${new Date(r.ts).toLocaleString()}</div>`;
+    el.appendChild(div);
+  });
+}
+
+function submitReview(){
+  const cur=currentUser(); if(!cur){ toast('Login required to submit review'); openAuth(); return; }
+  const rating=document.getElementById('reviewRating').value;
+  const text=(document.getElementById('reviewText').value||'').trim();
+  if(!rating||!text) return toast('Select rating and write review');
+  const reviews=getStore(LS_KEYS.REVIEWS); reviews.push({ id:uid(), userId:cur.id, userName:cur.username, rating, text, ts:new Date().toISOString() });
+  setStore(LS_KEYS.REVIEWS, reviews);
+  document.getElementById('reviewText').value=''; document.getElementById('reviewRating').value='';
+  renderReviews(); toast('Thanks for your review');
+}
+function clearReviewForm(){ document.getElementById('reviewText').value=''; document.getElementById('reviewRating').value=''; }
+
+/***********************
+ * Admin (local demo)   *
+ ***********************/
+function renderAdminArea(){
+  const cur=currentUser(); const area=document.getElementById('adminContent');
+  if(!cur || cur.role!=='admin'){ area.innerHTML='<div class="small">Admin login required. Use demo admin: <b>admin/admin123</b></div>'; return; }
+  const profiles=getStore(LS_KEYS.PROFILES), reviews=getStore(LS_KEYS.REVIEWS), bookings=getStore(LS_KEYS.BOOKINGS);
+  let html=`<div class="small" style="margin-bottom:8px"><span class="pill">Profiles: ${profiles.length}</span> <span class="pill">Reviews: ${reviews.length}</span> <span class="pill">Bookings: ${bookings.length}</span></div>`;
+  html+=`<h3>Profiles</h3>`;
+  profiles.forEach(p=>{ html+=`<div class="card"><strong>${escapeHtml(p.name)}</strong> (${p.type}) • ${escapeHtml(p.city)} • ₹${p.rate}/hr<div style="margin-top:8px"><button class="btn" onclick="openEditProfileAdmin('${p.id}')">Edit</button> <button class="btn" onclick="deleteProfile('${p.id}')">Delete</button></div></div>`; });
+  html+=`<h3 style="margin-top:12px">Reviews</h3>`;
+  reviews.forEach(r=>{ html+=`<div class="card">${escapeHtml(r.userName)} (${r.rating}★): ${escapeHtml(r.text)}<div style="margin-top:8px"><button class="btn" onclick="adminDeleteReview('${r.id}')">Delete</button></div></div>`; });
+  html+=`<h3 style="margin-top:12px">Bookings</h3>`;
+  bookings.forEach(b=>{ const p=profiles.find(x=>x.id===b.profileId)||{name:'Profile'}; html+=`<div class="card"><strong>${escapeHtml(p.name)}</strong> — ${escapeHtml(b.userName)} — ${b.date} ${b.time} • ${b.duration}h<div class="small">${escapeHtml(b.location)}</div></div>`; });
+  area.innerHTML=html;
+}
+
+function openAddProfileModal(){
+  const html=`
+    <h3>Add Profile</h3>
+    <label>Name</label><input id="npName"/>
+    <label>Type</label><select id="npType"><option>Callboy</option><option>Callgirl</option></select>
+    <label>Age</label><input id="npAge" type="number" value="25"/>
+    <label>City</label><input id="npCity"/>
+    <label>Services (comma separated)</label><input id="npServices" placeholder="Escort,Photoshoot"/>
+    <label>Rate (per hour)</label><input id="npRate" type="number" value="1000"/>
+    <label>Photo URL</label><input id="npPhoto" placeholder="https://..."/>
+    <label>Bio</label><textarea id="npBio" placeholder="Short intro (non-explicit)"></textarea>
+    <div style="margin-top:10px"><button class="btn btn-primary" onclick="addProfileFromModal()">Add</button></div>`;
+  showModal(html);
+}
+
+function addProfileFromModal(){
+  const name=(document.getElementById('npName').value||'').trim();
+  const type=document.getElementById('npType').value;
+  const age=+document.getElementById('npAge').value||25;
+  const city=(document.getElementById('npCity').value||'').trim();
+  const services=(document.getElementById('npServices').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const rate=+document.getElementById('npRate').value||1000;
+  const photo=document.getElementById('npPhoto').value||'https://via.placeholder.com/640x360?text=Profile';
+  const bio=(document.getElementById('npBio').value||'').trim();
+  if(!name||!city){ return toast('Name & city required'); }
+  const profiles=getStore(LS_KEYS.PROFILES); profiles.push({ id:uid(), name, type, age, city, services, rate, photo, bio }); setStore(LS_KEYS.PROFILES, profiles);
+  closeModal(); toast('Profile added'); renderAdminArea(); renderList();
+}
+
+function openEditProfileAdmin(id){
+  const profiles=getStore(LS_KEYS.PROFILES); const p=profiles.find(x=>x.id===id); if(!p) return;
+  const html=`
+    <h3>Edit Profile</h3>
+    <label>Name</label><input id="epName" value="${escapeHtml(p.name)}"/>
+    <label>Type</label><select id="epType"><option ${p.type==='Callboy'?'selected':''}>Callboy</option><option ${p.type==='Callgirl'?'selected':''}>Callgirl</option></select>
+    <label>Age</label><input id="epAge" type="number" value="${p.age}"/>
+    <label>City</label><input id="epCity" value="${escapeHtml(p.city)}"/>
+    <label>Services (comma)</label><input id="epServices" value="${(p.services||[]).map(escapeHtml).join(',')}"/>
+    <label>Rate</label><input id="epRate" type="number" value="${p.rate}"/>
+    <label>Photo URL</label><input id="epPhoto" value="${escapeHtml(p.photo)}"/>
+    <label>Bio</label><textarea id="epBio">${escapeHtml(p.bio||'')}</textarea>
+    <div style="margin-top:10px"><button class="btn btn-primary" onclick="saveProfileEditsAdmin('${p.id}')">Save</button></div>`;
+  showModal(html);
+}
+
+function saveProfileEditsAdmin(id){
+  const profiles=getStore(LS_KEYS.PROFILES); const p=profiles.find(x=>x.id===id); if(!p) return;
+  p.name=document.getElementById('epName').value.trim();
+  p.type=document.getElementById('epType').value;
+  p.age=+document.getElementById('epAge').value||p.age;
+  p.city=document.getElementById('epCity').value.trim();
+  p.services=(document.getElementById('epServices').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  p.rate=+document.getElementById('epRate').value||p.rate;
+  p.photo=document.getElementById('epPhoto').value||p.photo;
+  p.bio=(document.getElementById('epBio').value||'').trim();
+  setStore(LS_KEYS.PROFILES, profiles);
+  closeModal(); renderAdminArea(); renderList(); toast('Profile updated');
+}
+
+function deleteProfile(id){
+  if(!confirm('Delete this profile?')) return;
+  let profiles=getStore(LS_KEYS.PROFILES); profiles=profiles.filter(p=>p.id!==id); setStore(LS_KEYS.PROFILES, profiles);
+  renderAdminArea(); renderList(); toast('Profile deleted');
+}
+
+function renderAdminReviews(){
+  const reviews=getStore(LS_KEYS.REVIEWS); let html=`<h3>Reviews (${reviews.length})</h3>`;
+  reviews.forEach(r=>{ html+=`<div class="card">${escapeHtml(r.userName)} (${r.rating}★): ${escapeHtml(r.text)}<div style="margin-top:8px"><button class="btn" onclick="adminDeleteReview('${r.id}')">Delete</button></div></div>`; });
+  document.getElementById('adminContent').innerHTML=html;
+}
+
+function adminDeleteReview(id){
+  if(!confirm('Delete this review?')) return;
+  let reviews=getStore(LS_KEYS.REVIEWS); reviews=reviews.filter(r=>r.id!==id); setStore(LS_KEYS.REVIEWS, reviews);
+  renderAdminArea(); renderReviews(); toast('Review deleted');
+}
+
+function renderAdminBookings(){
+  const bookings=getStore(LS_KEYS.BOOKINGS); const profiles=getStore(LS_KEYS.PROFILES); let html=`<h3>Bookings (${bookings.length})</h3>`;
+  bookings.forEach(b=>{ const p=profiles.find(x=>x.id===b.profileId)||{name:'Profile'}; html+=`<div class="card"><strong>${escapeHtml(p.name)}</strong> — ${escapeHtml(b.userName)} — ${b.date} ${b.time} • ${b.duration}h <div class="small">${escapeHtml(b.location)}</div></div>`; });
+  document.getElementById('adminContent').innerHTML=html;
+}
+
+/***********************
+ * Misc helpers         *
+ ***********************/
+function clearFilters(){ document.getElementById('filterCity').value=''; document.getElementById('filterService').value=''; document.getElementById('filterType').value=''; renderList(); }
+function shuffleProfiles(){ const a=getStore(LS_KEYS.PROFILES); a.sort(()=>Math.random()-0.5); setStore(LS_KEYS.PROFILES,a); renderList(); }
+function openModal(html){ document.getElementById('modalBody').innerHTML=html; document.getElementById('modalRoot').style.display='flex' }
+function closeModal(){ document.getElementById('modalRoot').style.display='none' }
+function showModal(html){ openModal(html) }
+function scrollToReviews(){ showView('reviews'); window.scrollTo({top:0,behavior:'smooth'}); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])) }
+
+function exportAll(){
+  const data={ users:getStore(LS_KEYS.USERS), profiles:getStore(LS_KEYS.PROFILES), bookings:getStore(LS_KEYS.BOOKINGS), reviews:getStore(LS_KEYS.REVIEWS) };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='ic-data.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function importDemo(){ localStorage.clear(); ensureDemoData(); refreshUI(); toast('Demo data loaded'); }
+function clearAllData(){ if(!confirm('Clear ALL local demo data?')) return; localStorage.clear(); ensureDemoData(); refreshUI(); toast('Cleared'); }
+
+/***********************
+ * INIT                *
+ ***********************/
+ensureDemoData();
+refreshUI();
+renderList();
+renderReviews();
+renderMyBookings();
+// expose for quick debug
+window._IC={getStore,setStore,ensureDemoData,renderList};
+
+  </script>
+</body>
+</html>
