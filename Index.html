@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Independent Call Boy</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Welcome to Independent Call Boy</h1>
+        <p>Meet Kunal Sharma, 25 years old, available in all Rajasthan districts.</p>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#booking">Book Now</a></li>
+            <li><a href="#reviews">Client Reviews</a></li>
+            <li><a href="#support">Customer Support</a></li>
+        </ul>
+    </nav>
+    <section id="services">
+        <h2>Our Services</h2>
+        <ul>
+            <li>Full Night</li>
+            <li>Full Day</li>
+            <li>4 Hours</li>
+            <li>6 Hours</li>
+            <li>Girlfriend Experience</li>
+            <li>Pregnancy Planning</li>
+        </ul>
+    </section>
+    <section id="booking">
+        <h2>Booking Form</h2>
+        <form action="booking.php" method="POST">
+            <label for="clientName">Client Name:</label>
+            <input type="text" id="clientName" name="clientName" required>
+            <label for="age">Age:</label>
+            <input type="number" id="age" name="age" required>
+            <label for="city">City:</label>
+            <input type="text" id="city" name="city" required>
+            <label for="location">Exact Location / Hotel Details:</label>
+            <input type="text" id="location" name="location" required>
+            <label for="dateTime">Preferred Date & Time:</label>
+            <input type="datetime-local" id="dateTime" name="dateTime" required>
+            <label for="serviceType">Service Type:</label>
+            <select id="serviceType" name="serviceType" required>
+                <option value="fullNight">Full Night</option>
+                <option value="fullDay">Full Day</option>
+                <option value="4Hours">4 Hours</option>
+                <option value="6Hours">6 Hours</option>
+                <option value="gfExperience">Girlfriend Experience</option>
+                <option value="pregnancyPlanning">Pregnancy Planning</option>
+            </select>
+            <button type="submit">Book Now</button>
+        </form>
+        <p>Advance booking is mandatory (minimum 20%). Same-day emergency booking available (In-call only).</p>
+    </section>
+    <section id="reviews">
+        <h2>Client Reviews</h2>
+        <form action="submit_review.php" method="POST">
+            <label for="reviewText">Your Review:</label>
+            <textarea id="reviewText" name="reviewText" required></textarea>
+            <label for="rating">Rating:</label>
+            <select id="rating" name="rating" required>
+                <option value="1">1 Star</option>
+                <option value="2">2 Stars</option>
+                <option value="3">3 Stars</option>
+                <option value="4">4 Stars</option>
+                <option value="5">5 Stars</option>
+            </select>
+            <button type="submit">Submit Review</button>
+        </form>
+    </section>
+    <section id="support">
+        <h2>Customer Support</h2>
+        <p>For direct chat, contact us on WhatsApp: <a href="https://wa.me/919461486726">+91 9461486726</a></p>
+        <form action="contact.php" method="POST">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            <label for="message">Message:</label>
+            <textarea id="message" name="message" required></textarea>
+            <button type="submit">Send Message</button>
+        </form>
+    </section>
+    <footer>
+        <p>&copy; 2023 Independent Call Boy. All rights reserved.</p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
